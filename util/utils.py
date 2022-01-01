@@ -72,7 +72,7 @@ def need_update_data():
 # 是否是工作日
 def is_weekday():
     return True
-    return datetime.datetime.today().weekday() < 5
+    # return datetime.datetime.today().weekday() < 5
 
 
 def next_weekday(date):

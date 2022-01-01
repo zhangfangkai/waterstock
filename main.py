@@ -20,7 +20,7 @@ logging.getLogger().setLevel(logging.INFO)
 settings.init()
 
 if settings.config['cron']:
-    EXEC_TIME = "16:30"
+    EXEC_TIME = "17:00"
     schedule.every().day.at(EXEC_TIME).do(job)
 
     while True:
