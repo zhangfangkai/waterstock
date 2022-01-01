@@ -101,4 +101,4 @@ implementation 'org.webrtc:google-webrtc:1.0.32006'
 
 ## 调用ejabberd ReST API推送消息
 
-根据上述配置，修改[config.yaml](config.yaml)中的`push`相关配置
+根据上述配置，修改[config.yaml](../config.yaml)中的`push`相关配置
