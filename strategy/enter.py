@@ -79,8 +79,8 @@ def check_new(code_name, data, end_date=None, threshold=60):
 #   2017-11-16 保利地产
 def check_volume(code_name, data, end_date=None, threshold=60):
     # 流通市值不低于300亿
-    if code_name[2] < 3000000:
-        return False
+    # if code_name[2] < 3000000:
+    #     return False
 
     if len(data) < threshold:
         logging.debug("{0}:样本小于{1}天...\n".format(code_name, threshold))
@@ -109,8 +109,8 @@ def check_volume(code_name, data, end_date=None, threshold=60):
     amount = last_close * last_vol * 100
 
     # 成交额不低于2亿
-    if amount < 200000000:
-        return False
+    # if amount < 200000000:
+    #    return False
 
     data = data.head(n=threshold)
 
