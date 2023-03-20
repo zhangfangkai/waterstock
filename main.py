@@ -1,12 +1,15 @@
 # -*- encoding: UTF-8 -*-
 
-from util import utils, work_flow
-import settings
 import logging
+logging.basicConfig(level=logging.DEBUG, format=' [%(asctime)s] - [%(filename)s] - [%(message)s]', filename='log/waterstock.log')
+
+from util import utils, work_flow
+from util.result_join import join_result
 import schedule
 import time
-
-from util.result_join import join_result
+import settings
+from warnings import simplefilter
+simplefilter(action='ignore', category=FutureWarning)
 
 
 def job():
@@ -15,17 +18,22 @@ def job():
         join_result()
 
 
-logging.basicConfig(format='%(asctime)s %(message)s', filename='sequoia.log')
-logging.getLogger().setLevel(logging.INFO)
-settings.init()
+def main():
+    # 初始化setting，读取config.yaml
+    settings.init()
+    logging.info("-------start--------")
+    if settings.config['cron']:
+        EXEC_TIME = "17:00"
+        schedule.every().day.at(EXEC_TIME).do(job)
+        while True:
+            schedule.run_pending()
+            time.sleep(1)
+    else:
+        work_flow.process()
+        join_result()
 
-if settings.config['cron']:
-    EXEC_TIME = "17:00"
-    schedule.every().day.at(EXEC_TIME).do(job)
 
-    while True:
-        schedule.run_pending()
-        time.sleep(1)
-else:
-    work_flow.process()
-    join_result()
+if __name__ == '__main__':
+    main()
+
+

@@ -20,45 +20,47 @@ import pandas as pd
 def process():
     logging.info("************************ process start ***************************************")
     try:
-        # ts.set_token(settings.config['token'])
-        # pro = ts.pro_api()
+        if settings.config['is_backtest']:
+            subset = pd.read_csv(settings.config['stocks_file'])
+            stocks = [tuple(x) for x in subset.values]
+        else:
+            all_data = ts.get_today_all()
+            # 去除创业板
+            # all_data = all_data[~all_data.code.str.contains('^30')]
+            # 去除科创板
+            all_data = all_data[~all_data.code.str.contains('^68')]
 
-        all_data = ts.get_today_all()
-        # 去除创业板
-        all_data = all_data[~all_data.code.str.contains('^30')]
-        # 去除科创板
-        all_data = all_data[~all_data.code.str.contains('^68')]
-
-        subset = all_data[['code', 'name', 'nmc']]
-        subset.to_csv(settings.config['stocks_file'], index=None, header=True)
-        stocks = [tuple(x) for x in subset.values]
-        statistics(all_data, stocks)
+            # nmc--流通市值
+            subset = all_data[['code', 'name', 'nmc']]
+            subset.to_csv(settings.config['stocks_file'], index=None, header=True)
+            stocks = [tuple(x) for x in subset.values]
+            statistics(all_data, stocks)
     except urllib.error.URLError as e:
+        logging.error(e)
         subset = pd.read_csv(settings.config['stocks_file'])
         subset['code'] = subset['code'].astype(str)
         stocks = [tuple(x) for x in subset.values]
 
-    if utils.need_update_data():
+    if not settings.config['is_backtest'] and utils.need_update_data():
         utils.prepare()
         data_fetcher.run(stocks)
+
+        # 校验某些股票是否触发海龟止损了
         check_exit()
 
     strategies = {
-        '海龟交易法则': turtle_trade.check_enter,
-        '放量上涨': enter.check_volume,
+        # '海龟交易法则': turtle_trade.check_enter,
+        # '放量上涨': enter.check_volume,
         '突破平台': breakthrough_platform.check,
-        '均线多头': keep_increasing.check,
-        '无大幅回撤': low_backtrace_increase.check,
-        '停机坪': parking_apron.check,
-        '回踩年线': backtrace_ma250.check,
+        # '均线多头': keep_increasing.check,
+        # '无大幅回撤': low_backtrace_increase.check,
+        # '停机坪': parking_apron.check,
+        # '回踩年线': backtrace_ma250.check,
     }
     filename = "./res/res_" + str(datetime.date.today()) +".txt"
 
     with open(filename,"w",encoding="UTF-8")  as f:
-        f.write("\n")
-
-    if datetime.datetime.now().weekday() == 0:
-        strategies['均线多头'] = keep_increasing.check
+        f.write("----start----\n")
 
     for strategy, strategy_func in strategies.items():
         check(stocks, strategy, strategy_func)
@@ -93,6 +95,7 @@ def check_enter(end_date=None, strategy_fun=enter.check_volume):
 
 # 统计数据
 def statistics(all_data, stocks):
+    # changepercent--涨跌幅
     limitup = len(all_data.loc[(all_data['changepercent'] >= 9.5)])
     limitdown = len(all_data.loc[(all_data['changepercent'] <= -9.5)])
 
@@ -103,7 +106,8 @@ def statistics(all_data, stocks):
         stock_data = utils.read_data(stock)
         return enter.check_ma(stock, stock_data)
 
-    ma250_count = len(list(filter(ma250, stocks)))
+    # ma250_count = len(list(filter(ma250, stocks)))
+    ma250_count = 1000
 
     msg = "涨停数：{}   跌停数：{}\n涨幅大于5%数：{}  跌幅大于5%数：{}\n年线以上个股数量：    {}"\
         .format(limitup, limitdown, up5, down5, ma250_count)

@@ -6,7 +6,7 @@ import logging
 from strategy import turtle_trade
 
 
-# 持续上涨（MA15向上）
+# 持续上涨（MA10向上）
 def check(code_name, data, end_date=None, threshold=10):
     if len(data) < threshold:
         logging.debug("{0}:样本小于{1}天...\n".format(code_name, threshold))
@@ -28,8 +28,8 @@ def check(code_name, data, end_date=None, threshold=10):
     step1 = round(threshold/3)
     step2 = round(threshold*2/3)
 
-    if data.iloc[0]['ma10'] < data.iloc[step1]['ma10'] < \
-        data.iloc[step2]['ma10'] < data.iloc[-1]['ma10'] and data.iloc[-1]['ma10'] > 1.1*data.iloc[0]['ma10']:
+    # 最近10天 ma10[t0]<ma10[t3]<ma10[t6]<ma10[t9] 并且t9 相对 t0 上涨 10%
+    if data.iloc[0]['ma10'] < data.iloc[step1]['ma10'] < data.iloc[step2]['ma10'] < data.iloc[-1]['ma10'] and data.iloc[-1]['ma10'] > 1.1*data.iloc[0]['ma10']:
         return True
     else:
         return False

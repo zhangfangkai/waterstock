@@ -13,6 +13,7 @@ def check(code_name, data, end_date=None, threshold=15):
     if len(data) < threshold:
         logging.debug("{0}:样本小于{1}天...\n".format(code_name, threshold))
         return
+    # 收盘价30日均价
     data['ma30'] = pd.Series(tl.MA(data['close'].values, threshold), index=data.index.values)
 
     begin_date = data.iloc[0].date
@@ -30,9 +31,12 @@ def check(code_name, data, end_date=None, threshold=15):
     breakthrough_row = None
 
     for index, row in data.iterrows():
+        # 如果今天穿过了30日均线
         if row['open'] < row['ma30'] <= row['close']:
+            # 成交量比大于2
             if enter.check_volume(code_name, origin_data, row['date'], threshold):
                 breakthrough_row = row
+                break
 
     if breakthrough_row is None:
         return False
@@ -41,6 +45,7 @@ def check(code_name, data, end_date=None, threshold=15):
     data_end = data.loc[(data['date'] >= breakthrough_row['date'])]
 
     for index, row in data_front.iterrows():
+        # 突破之前在ma30左右波动，在下5%到20%的范围里
         if not (-0.05 < (row['ma30'] - row['close']) / row['ma30'] < 0.2):
             return False
 

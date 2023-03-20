@@ -1,5 +1,6 @@
-cron: true
+cron: false
 
+is_backtest: true
 data_dir: "data"
 db_dir: "storage"
 stocks_file: "./storage/stocks.csv"
