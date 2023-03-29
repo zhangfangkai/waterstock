@@ -8,19 +8,19 @@ from strategy import enter
 
 
 # 平台突破策略
-def check(code_name, data, end_date=None, threshold=15):
+def check(stock_meta, data, end_date=None, threshold=30):
     origin_data = data
     if len(data) < threshold:
-        logging.debug("{0}:样本小于{1}天...\n".format(code_name, threshold))
-        return
+        logging.debug("{0}:样本小于{1}天...".format(stock_meta, threshold))
+        return False, "", stock_meta[0], stock_meta[1], stock_meta[2]
     # 收盘价30日均价
     data['ma30'] = pd.Series(tl.MA(data['close'].values, threshold), index=data.index.values)
 
     begin_date = data.iloc[0].date
     if end_date is not None:
         if end_date < begin_date:  # 该股票在end_date时还未上市
-            logging.debug("{}在{}时还未上市".format(code_name, end_date))
-            return False
+            logging.debug("{}\t在\t{}\t时还未上市".format(stock_meta, end_date))
+            return False, "", stock_meta[0], stock_meta[1], stock_meta[2]
 
     if end_date is not None:
         mask = (data['date'] <= end_date)
@@ -34,12 +34,12 @@ def check(code_name, data, end_date=None, threshold=15):
         # 如果今天穿过了30日均线
         if row['open'] < row['ma30'] <= row['close']:
             # 成交量比大于2
-            if enter.check_volume(code_name, origin_data, row['date'], threshold):
+            if enter.check_volume(stock_meta, origin_data, row['date'], threshold)[0]:
                 breakthrough_row = row
                 break
 
     if breakthrough_row is None:
-        return False
+        return False, "", stock_meta[0], stock_meta[1], stock_meta[2]
 
     data_front = data.loc[(data['date'] < breakthrough_row['date'])]
     data_end = data.loc[(data['date'] >= breakthrough_row['date'])]
@@ -47,14 +47,7 @@ def check(code_name, data, end_date=None, threshold=15):
     for index, row in data_front.iterrows():
         # 突破之前在ma30左右波动，在下5%到20%的范围里
         if not (-0.05 < (row['ma30'] - row['close']) / row['ma30'] < 0.2):
-            return False
+            return False, "", stock_meta[0], stock_meta[1], stock_meta[2]
 
-    push.strategy("股票{0} 突破日期：{1}\n".format(code_name, breakthrough_row['date']))
-    return True
-
-
-
-
-
-
-
+    push.sink_to_txt("股票{0} 突破日期：{1}\n".format(stock_meta, breakthrough_row['date']))
+    return True, breakthrough_row['date'], stock_meta[0], stock_meta[1], stock_meta[2]

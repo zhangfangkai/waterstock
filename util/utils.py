@@ -44,7 +44,6 @@ def clean_files():
 # 读取本地数据文件
 def read_data(code_name):
     stock = code_name[0]
-    name = code_name[1]
     file_name = stock  + '.h5'
     if os.path.exists(settings.config['data_dir'] + "/" + file_name):
         return pd.read_hdf(settings.config['data_dir'] + "/" + file_name)

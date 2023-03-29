@@ -1,5 +1,5 @@
 # -*- encoding: UTF-8 -*-
-
+from strategy.backtest import process_backtest
 from util import data_fetcher, db, push, utils
 import settings
 import strategy.enter as enter
@@ -17,12 +17,18 @@ import urllib
 import pandas as pd
 
 
+
+
 def process():
     logging.info("************************ process start ***************************************")
+
+    t_shelve = db.ShelvePersistence()
+
     try:
         if settings.config['is_backtest']:
             subset = pd.read_csv(settings.config['stocks_file'])
-            stocks = [tuple(x) for x in subset.values]
+            subset['code'] = subset['code'].astype(str)
+            stocks_metas = [tuple(x) for x in subset.values]
         else:
             all_data = ts.get_today_all()
             # 去除创业板
@@ -33,65 +39,60 @@ def process():
             # nmc--流通市值
             subset = all_data[['code', 'name', 'nmc']]
             subset.to_csv(settings.config['stocks_file'], index=None, header=True)
-            stocks = [tuple(x) for x in subset.values]
-            statistics(all_data, stocks)
+            stocks_metas = [tuple(x) for x in subset.values]
+            statistics(all_data, stocks_metas)
     except urllib.error.URLError as e:
         logging.error(e)
         subset = pd.read_csv(settings.config['stocks_file'])
         subset['code'] = subset['code'].astype(str)
-        stocks = [tuple(x) for x in subset.values]
+        stocks_metas = [tuple(x) for x in subset.values]
 
     if not settings.config['is_backtest'] and utils.need_update_data():
-        utils.prepare()
-        data_fetcher.run(stocks)
+    # if utils.need_update_data():
 
+        utils.prepare()
+        data_fetcher.run(stocks_metas)
         # 校验某些股票是否触发海龟止损了
         check_exit()
 
     strategies = {
-        # '海龟交易法则': turtle_trade.check_enter,
-        # '放量上涨': enter.check_volume,
+        '海龟交易法则': turtle_trade.check_enter,
+        '放量上涨': enter.check_volume,
         '突破平台': breakthrough_platform.check,
-        # '均线多头': keep_increasing.check,
-        # '无大幅回撤': low_backtrace_increase.check,
-        # '停机坪': parking_apron.check,
-        # '回踩年线': backtrace_ma250.check,
+        '均线多头': keep_increasing.check,
+        '无大幅回撤': low_backtrace_increase.check,
+        '停机坪': parking_apron.check,
+        '回踩年线': backtrace_ma250.check,
     }
-    filename = "./res/res_" + str(datetime.date.today()) +".txt"
+    filename = "./res/res_" + str(datetime.date.today()) + ".txt"
 
-    with open(filename,"w",encoding="UTF-8")  as f:
+    with open(filename, "w", encoding="UTF-8") as f:
         f.write("----start----\n")
 
+    end_date = settings.config['end_date']
+    if end_date == '1997-09-24':
+        end_date = None
+
     for strategy, strategy_func in strategies.items():
-        check(stocks, strategy, strategy_func)
-        time.sleep(2)
+        res = []
+        for stocks_meta in stocks_metas:
+            data = utils.read_data(stocks_meta)
+            if data is not None:
+                single_res = strategy_func(stocks_meta, data, end_date=end_date)
+                if single_res[0] is True:
+                    res.append(single_res)
+
+        t_shelve.save_res(strategy,res)
+
 
     logging.info("************************ process   end ***************************************")
 
-
-def check(stocks, strategy, strategy_func):
-    end = None
-    m_filter = check_enter(end_date=end, strategy_fun=strategy_func)
-    results = list(filter(m_filter, stocks))
-    results = "\n".join(str(i) for i in results)
-    results.strip("\n")
-    push.strategy('******************************"{0}-开始"**********************'
-                  '********\n{1}\n******************************"{0}-结束"******************************\n'.format(strategy, results))
-
-
-def check_enter(end_date=None, strategy_fun=enter.check_volume):
-    def end_date_filter(code_name):
-        data = utils.read_data(code_name)
-        if data is None:
-            return False
-        else:
-            return strategy_fun(code_name, data, end_date=end_date)
-        # if result:
-        #     message = turtle_trade.calculate(code_name, data)
-        #     push.strategy("{0} {1}".format(code_name, message))
-
-    return end_date_filter
-
+def predict():
+    t_shelve = db.ShelvePersistence()
+    strategt_res = t_shelve.read_res()
+    for key, val in strategt_res.items():
+        for threshold in range(1, 30):
+            process_backtest(key, val, threshold)
 
 # 统计数据
 def statistics(all_data, stocks):
@@ -102,16 +103,11 @@ def statistics(all_data, stocks):
     up5 = len(all_data.loc[(all_data['changepercent'] >= 5)])
     down5 = len(all_data.loc[(all_data['changepercent'] <= -5)])
 
-    def ma250(stock):
-        stock_data = utils.read_data(stock)
-        return enter.check_ma(stock, stock_data)
-
-    # ma250_count = len(list(filter(ma250, stocks)))
     ma250_count = 1000
 
-    msg = "涨停数：{}   跌停数：{}\n涨幅大于5%数：{}  跌幅大于5%数：{}\n年线以上个股数量：    {}"\
+    msg = "涨停数：{}   跌停数：{}\n涨幅大于5%数：{}  跌幅大于5%数：{}\n年线以上个股数量：    {}" \
         .format(limitup, limitdown, up5, down5, ma250_count)
-    push.statistics(msg)
+    push.sink_to_txt(msg)
 
 
 def check_exit():
@@ -121,11 +117,10 @@ def check_exit():
         code_name = file[key]['code_name']
         data = utils.read_data(code_name)
         if turtle_trade.check_exit(code_name, data):
-            push.strategy("{0} 达到退出条件".format(code_name))
+            push.sink_to_txt("{0} 达到退出条件".format(code_name))
             del file[key]
         elif turtle_trade.check_stop(code_name, data, file[key]):
-            push.strategy("{0} 达到止损条件".format(code_name))
+            push.sink_to_txt("{0} 达到止损条件".format(code_name))
             del file[key]
 
     file.close()
-

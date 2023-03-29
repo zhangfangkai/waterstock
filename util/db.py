@@ -49,6 +49,16 @@ class ShelvePersistence(object):
             else:
                 return False
 
+    def save_res(self, strategy, res):
+        file_path = settings.config['db_dir'] + "/StrategtRes"
+        with shelve.open(file_path) as db:
+            db['strategt_res'] = {strategy: res}
+
+    def read_res(self):
+        file_path = settings.config['db_dir'] + "/StrategtRes"
+        with shelve.open(file_path) as db:
+            return db['strategt_res']
+
     def positions(self):
         shelve_file = shelve.open(settings.config['db_dir'] + "/Positions")
         for key in shelve_file:

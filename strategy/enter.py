@@ -34,8 +34,10 @@ def check_breakthrough(code_name, data, end_date=None, threshold=30):
         return False
 
 
-# 收盘价高于N日均线
-def check_ma(code_name, data, end_date=None, ma_days=250):
+def check_ma(code_name, data, end_date=None, ma_days=10):
+    """
+        收盘价高于N日均线
+    """
     if data is None or len(data) < ma_days:
         logging.debug("{0}:样本小于{1}天...\n".format(code_name, ma_days))
         return False
@@ -69,14 +71,18 @@ def check_new(code_name, data, end_date=None, threshold=60):
         return False
 
 
-# 量比大于2
+
 def check_volume(code_name, data, end_date=None, threshold=60):
+    """
+        规则：最后一天收盘价要高于开盘价，上涨率要大于2，成交额不低于2亿，最后一天的成交量大于之前5天成交均量的2倍
+    """
+
     # 流通市值介于50亿到300亿之间
-    if code_name[2] > 3000000 or code_name[2] < 500000:
-        return False
+    # if code_name[2] > 3000000 or code_name[2] < 1000000:
+    #     return False
 
     if len(data) < threshold:
-        logging.debug("{0}:样本小于{1}天...\n".format(code_name, threshold))
+        logging.debug("{0}:样本小于{1}天...".format(code_name, threshold))
         return False
     # 得到成交量的5日移动均线
     data['vol_ma5'] = pd.Series(tl.MA(data['volume'].values, 5), index=data.index.values)
@@ -92,7 +98,7 @@ def check_volume(code_name, data, end_date=None, threshold=60):
         return False
     data = data.tail(n=threshold + 1)
     if len(data) < threshold + 1:
-        logging.debug("{0}:样本小于{1}天...\n".format(code_name, threshold))
+        logging.debug("{0}:样本小于{1}天...".format(code_name, threshold))
         return False
 
     # 最后一天收盘价
@@ -103,7 +109,7 @@ def check_volume(code_name, data, end_date=None, threshold=60):
     amount = last_close * last_vol * 100
 
     # 成交额不低于2亿
-    if amount < 200000000:
+    if amount < 500000000:
        return False
 
     data = data.head(n=threshold)
@@ -112,41 +118,8 @@ def check_volume(code_name, data, end_date=None, threshold=60):
     # 最后一天成交量大于前面5天的成交量的2倍
     vol_ratio = last_vol / mean_vol
     if vol_ratio >= 2:
-        msg = "*{0}\n量比：{1:.2f}\t涨幅：{2}%\n".format(code_name, vol_ratio, p_change)
+        msg = "{0}\t量比：{1:.2f}\t涨幅：{2}%".format(code_name, vol_ratio, p_change)
         logging.debug(msg)
         return True
     else:
         return False
-
-
-# 量比大于3.0
-def check_continuous_volume(code_name, data, end_date=None, threshold=60, window_size=3):
-    stock = code_name[0]
-    name = code_name[1]
-    # 得到成交量的5日移动均线
-    data['vol_ma5'] = pd.Series(tl.MA(data['volume'].values, 5), index=data.index.values)
-    if end_date is not None:
-        mask = (data['date'] <= end_date)
-        data = data.loc[mask]
-    data = data.tail(n=threshold + window_size)
-    if len(data) < threshold + window_size:
-        logging.debug("{0}:样本小于{1}天...\n".format(code_name, threshold+window_size))
-        return False
-
-    # 最后一天收盘价
-    last_close = data.iloc[-1]['close']
-    # 最后一天成交量
-    last_vol = data.iloc[-1]['volume']
-
-    data_front = data.head(n=threshold)
-    data_end = data.tail(n=window_size)
-
-    mean_vol = data_front.iloc[-1]['vol_ma5']
-
-    for index, row in data_end.iterrows():
-        if float(row['volume']) / mean_vol < 3.0:
-            return False
-
-    msg = "*{0} 量比：{1:.2f}\n\t收盘价：{2}\n".format(code_name, last_vol/mean_vol, last_close)
-    logging.debug(msg)
-    return True

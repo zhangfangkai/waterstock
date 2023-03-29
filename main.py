@@ -30,7 +30,8 @@ def main():
             time.sleep(1)
     else:
         work_flow.process()
-        join_result()
+        # work_flow.predict()
+        # join_result()
 
 
 if __name__ == '__main__':

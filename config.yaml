@@ -4,7 +4,7 @@ is_backtest: true
 data_dir: "data"
 db_dir: "storage"
 stocks_file: "./storage/stocks.csv"
-
+end_date: "1997-09-24"
 token: "3b5f8068af3f13161e7518dbd681e7f4e795209fd20b686ee0336946"
 
 push:
