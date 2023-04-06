@@ -1,5 +1,7 @@
 # -*- coding: UTF-8 -*-
 import datetime
+import logging
+
 from pandas.tseries.offsets import *
 
 import xlrd
@@ -61,6 +63,7 @@ def need_update_data():
         else:
             start_time = next_weekday(data.iloc[-1].date)
             current_time = datetime.datetime.now()
+            logging.INFO("start_time:{}, current_time:{}".format(start_time,current_time))
             if start_time > current_time:
                 return False
             return True

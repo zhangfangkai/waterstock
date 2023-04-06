@@ -4,56 +4,72 @@ import tushare as ts
 import logging
 import settings
 import talib as tl
+import akshare as ak
 
 import concurrent.futures
 
 
-# def update_data(code_name):
+# def fetch(code_name):
 #     stock = code_name[0]
-#     old_data = utils.read_data(code_name)
-#     if not old_data.empty:
-#         start_time = utils.next_weekday(old_data.iloc[-1].date)
-#         current_time = datetime.datetime.now()
-#         if start_time > current_time:
-#             return
+#     data = ak.stock_zh_a_hist(symbol=stock, period="daily", start_date="20200101", adjust="qfq")
 #
-#         df = ts.get_k_data(stock, autype='qfq')
-#         mask = (df['date'] >= start_time.strftime('%Y-%m-%d'))
-#         appender = df.loc[mask]
-#         if appender.empty:
-#             return
-#         else:
-#             return appender
+#     if data is None or data.empty:
+#         logging.debug("股票："+stock+" 没有数据，略过...")
+#         return
+#
+#     data['p_change'] = tl.ROC(data['收盘'], 1)
+#
+#     return data
 
 
-def init_data(code_name):
+# def run(stocks):
+#     stocks_data = {}
+#     with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
+#         future_to_stock = {executor.submit(fetch, stock): stock for stock in stocks}
+#         for future in concurrent.futures.as_completed(future_to_stock):
+#             stock = future_to_stock[future]
+#             try:
+#                 data = future.result()
+#                 if data is not None:
+#                     data = data.astype({'成交量': 'double'})
+#                     stocks_data[stock] = data
+#             except Exception as exc:
+#                 print('%s(%r) generated an exception: %s' % (stock[1], stock[0], exc))
+#
+#     return stocks_data
+
+#
+def fetch(code_name):
     stock = code_name[0]
+    data = ak.stock_zh_a_hist(symbol=stock, period="daily", start_date="20200101", adjust="hfq")
+
     # ts.set_token(settings.config['token'])
     # pro = ts.pro_api()
-    data = ts.get_k_data(stock, autype='qfq')
+    if code_name[1] == "香山股份":
+        print(111)
+    # data = ts.get_k_data(stock, autype='qfq')
 
     if data is None or data.empty:
         logging.debug("股票："+stock+" 没有数据，略过...")
         return
 
-    data['p_change'] = tl.ROC(data['close'], 1)
+    data['p_change'] = tl.ROC(data['收盘'], 1)
 
     return data
 
-
 def run(stocks):
     append_mode = False
-    update_fun = init_data
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=15) as executor:
-        future_to_stock = {executor.submit(update_fun, stock): stock for stock in stocks}
+        future_to_stock = {executor.submit(fetch, stock): stock for stock in stocks}
         for future in concurrent.futures.as_completed(future_to_stock):
             stock = future_to_stock[future]
             try:
                 data = future.result()
-                data['code'] = data['code'].apply(lambda x: str(x))
+                file_name = stock[0] + '.h5'
+
                 if data is not None:
-                    file_name = stock[0] + '.h5'
+                    data = data.astype({'成交量': 'double'})
                     data.to_hdf(settings.config['data_dir'] + "/" + file_name, 'data', append=append_mode, format='table', encoding ='UTF-8')
             except Exception as exc:
                 print(exc)

@@ -7,6 +7,9 @@ import logging
 
 # TODO 真实波动幅度（ATR）放大
 # 最后一个交易日收市价从下向上突破指定区间内最高价
+from util import push
+
+
 def check_breakthrough(code_name, data, end_date=None, threshold=30):
     max_price = 0
     if end_date is not None:
@@ -118,8 +121,7 @@ def check_volume(code_name, data, end_date=None, threshold=60):
     # 最后一天成交量大于前面5天的成交量的2倍
     vol_ratio = last_vol / mean_vol
     if vol_ratio >= 2:
-        msg = "{0}\t量比：{1:.2f}\t涨幅：{2}%".format(code_name, vol_ratio, p_change)
-        logging.debug(msg)
+        push.sink_to_txt("{0}\t量比：{1:.2f}\t涨幅：{2}%\n".format(code_name, vol_ratio, p_change))
         return True
     else:
         return False

@@ -38,7 +38,8 @@ def main():
 
     for key,val in strategy_dict.items():
         print(key,val)
-        process_backtest_tmp(key,val)
+        for i in range(1,10):
+            process_backtest_tmp(key,val,i)
 
 
 if __name__ == '__main__':

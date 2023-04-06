@@ -8,6 +8,12 @@ from strategy import turtle_trade
 
 # “停机坪”策略
 def check(code_name, data, end_date=None, threshold=15):
+    """
+        最近10天有一天涨停了，该日收盘价为10日内最高价
+        这天之后三天：
+        第一天的开盘价大于该日，收盘价大于该日，收盘比开盘在0.97到1.03之间波动
+        第二天和第三天的收盘比开盘在0.97到1.03之间波动，上涨幅度在-5%到5%之间，开盘价和收盘价都要高于改日
+    """
     origin_data = data
 
     begin_date = data.iloc[0].date
@@ -58,8 +64,6 @@ def check_internal(code_name, data, limitup_row):
     if not(consolidation_day1['close'] > limitup_price and consolidation_day1['open'] > limitup_price and
         0.97 < consolidation_day1['close'] / consolidation_day1['open'] < 1.03):
         return False
-
-    threshold_price = limitup_end.iloc[-1]['close']
 
     for index, row in consolidation_day23.iterrows():
         try:
