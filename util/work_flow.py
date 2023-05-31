@@ -22,22 +22,19 @@ def process():
     logging.info("************************ process start ***************************************")
     try:
         if settings.config['is_backtest']:
-            subset = pd.read_csv(settings.config['stocks_file'])
+            subset = pd.read_csv(settings.config['stocks_file'], dtype=object)
             subset['代码'] = subset['代码'].astype(str)
             stocks_metas = [tuple(x) for x in subset.values]
         else:
             all_data = ak.stock_zh_a_spot_em()
             subset = all_data[['代码', '名称']]
-            # all_data = ts.get_today_all()
-            # 去除创业板
-            # all_data = all_data[~all_data.code.str.contains('^30')]
             # 去除科创板
-            subset = subset[~all_data['代码'].str.contains('^68')]
+            subset = subset[~subset['代码'].str.contains('^68')]
+            # 去除北交所
+            subset = subset[~subset['代码'].str.contains('^8')]
 
-            # # nmc--流通市值
-            # subset = all_data[['code', 'name', 'nmc']]
             subset['代码'] = subset['代码'].astype(str)
-            subset.to_csv(settings.config['stocks_file'],quoting=1,index=None, header=True)
+            subset.to_csv(settings.config['stocks_file'], quoting=1,index=None, header=True)
             stocks_metas = [tuple(x) for x in subset.values]
             statistics(all_data, stocks_metas)
     except urllib.error.URLError as e:
@@ -47,22 +44,24 @@ def process():
         subset['代码'] = subset['代码'].astype(str)
         stocks_metas = [tuple(x) for x in subset.values]
 
-    stocks_data = data_fetcher.run(stocks_metas)
-
-
     # if not settings.config['is_backtest'] and utils.need_update_data():
     if utils.need_update_data():
+        print("获取最新股票行情数据中，wait...")
         utils.prepare()
         data_fetcher.run(stocks_metas)
+        print("股票行情数据获取完毕！")
+    print("开始计算，wait...")
 
+    # 数据列名
+    # 日期, 开盘, 收盘, 最高, 最低, 成交量, 成交额, 振幅, 涨跌幅, 涨跌额, 换手率,
     strategies = {
-        # '海龟交易法则': turtle_trade.check_enter,
+        '海龟交易法则': turtle_trade.check_enter,
         '放量上涨': enter.check_ma,
-        # '突破平台': breakthrough_platform.check,
-        # '均线多头': keep_increasing.check,
+        '突破平台': breakthrough_platform.check,
+        '均线多头': keep_increasing.check,
         # '无大幅回撤': low_backtrace_increase.check,
         # '停机坪': parking_apron.check,
-        # '回踩年线': backtrace_ma250.check,
+        '回踩年线': backtrace_ma250.check,
     }
     filename = "./res/res_" + str(datetime.date.today()) + ".txt"
 
@@ -73,8 +72,8 @@ def process():
     if end_date == '1997-09-24':
         end_date = None
 
-    # for strategy, strategy_func in strategies.items():
-    #     check(stocks_metas, strategy, strategy_func, end_date)
+    for strategy, strategy_func in strategies.items():
+        check(stocks_metas, strategy, strategy_func, end_date)
 
     logging.info("************************ process   end ***************************************")
 

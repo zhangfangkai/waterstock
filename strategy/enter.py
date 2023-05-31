@@ -41,25 +41,28 @@ def check_ma(code_name, data, end_date=None, ma_days=10):
     """
         收盘价高于N日均线
     """
+    if code_name[1] == '三一重工':
+        print(111)
     if data is None or len(data) < ma_days:
         logging.debug("{0}:样本小于{1}天...\n".format(code_name, ma_days))
         return False
 
     ma_tag = 'ma' + str(ma_days)
-    data[ma_tag] = pd.Series(tl.MA(data['close'].values, ma_days), index=data.index.values)
+    data[ma_tag] = pd.Series(tl.MA(data['收盘'].values, ma_days), index=data.index.values)
 
-    begin_date = data.iloc[0].date
+    begin_date = data.iloc[0]['日期']
     if end_date is not None:
         if end_date < begin_date:  # 该股票在end_date时还未上市
             logging.debug("{}在{}时还未上市".format(code_name, end_date))
             return False
     if end_date is not None:
-        mask = (data['date'] <= end_date)
+        mask = (data['日期'] <= end_date)
         data = data.loc[mask]
 
-    last_close = data.iloc[-1]['close']
+    last_open = data.iloc[-1]['开盘']
+    last_close = data.iloc[-1]['收盘']
     last_ma = data.iloc[-1][ma_tag]
-    if last_close > last_ma:
+    if last_close > last_ma and last_ma > last_open:
         return True
     else:
         return False
@@ -88,16 +91,16 @@ def check_volume(code_name, data, end_date=None, threshold=60):
         logging.debug("{0}:样本小于{1}天...".format(code_name, threshold))
         return False
     # 得到成交量的5日移动均线
-    data['vol_ma5'] = pd.Series(tl.MA(data['volume'].values, 5), index=data.index.values)
+    data['vol_ma5'] = pd.Series(tl.MA(data['成交量'].values, 5), index=data.index.values)
 
     if end_date is not None:
-        mask = (data['date'] <= end_date)
+        mask = (data['日期'] <= end_date)
         data = data.loc[mask]
     if data.empty:
         return False
-    p_change = data.iloc[-1]['p_change']
+    p_change = data.iloc[-1]['涨跌幅']
     # 最后一天的上涨率小于2，或者最后一天收盘价低于开盘价
-    if p_change < 2 or data.iloc[-1]['close'] < data.iloc[-1]['open']:
+    if p_change < 2 or data.iloc[-1]['收盘'] < data.iloc[-1]['开盘']:
         return False
     data = data.tail(n=threshold + 1)
     if len(data) < threshold + 1:
@@ -105,9 +108,9 @@ def check_volume(code_name, data, end_date=None, threshold=60):
         return False
 
     # 最后一天收盘价
-    last_close = data.iloc[-1]['close']
+    last_close = data.iloc[-1]['收盘']
     # 最后一天成交量
-    last_vol = data.iloc[-1]['volume']
+    last_vol = data.iloc[-1]['成交量']
 
     amount = last_close * last_vol * 100
 

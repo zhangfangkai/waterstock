@@ -61,9 +61,11 @@ def need_update_data():
         if data is None:
             return True
         else:
-            start_time = next_weekday(data.iloc[-1].date)
+            start_time = next_weekday(data.iloc[-1]['日期'])
             current_time = datetime.datetime.now()
-            logging.INFO("start_time:{}, current_time:{}".format(start_time,current_time))
+            print(str(start_time))
+            print(str(current_time))
+            logging.info("start_time:{}, current_time:{}".format(start_time,current_time))
             if start_time > current_time:
                 return False
             return True

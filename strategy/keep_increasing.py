@@ -14,16 +14,16 @@ def check(code_name, data, end_date=None, threshold=10):
     if len(data) < threshold:
         logging.debug("{0}:样本小于{1}天...\n".format(code_name, threshold))
         return
-    data['ma10'] = pd.Series(tl.MA(data['close'].values, threshold), index=data.index.values)
+    data['ma10'] = pd.Series(tl.MA(data['收盘'].values, threshold), index=data.index.values)
 
-    begin_date = data.iloc[0].date
+    begin_date = data.iloc[0]['日期']
     if end_date is not None:
         if end_date < begin_date:  # 该股票在end_date时还未上市
             logging.debug("{}在{}时还未上市".format(code_name, end_date))
             return False
 
     if end_date is not None:
-        mask = (data['date'] <= end_date)
+        mask = (data['日期'] <= end_date)
         data = data.loc[mask]
 
     data = data.tail(n=threshold)

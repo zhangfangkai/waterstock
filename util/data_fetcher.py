@@ -52,9 +52,6 @@ def fetch(code_name):
     if data is None or data.empty:
         logging.debug("股票："+stock+" 没有数据，略过...")
         return
-
-    data['p_change'] = tl.ROC(data['收盘'], 1)
-
     return data
 
 def run(stocks):

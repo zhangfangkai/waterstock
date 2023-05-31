@@ -19,7 +19,7 @@ def check_enter(code_name, data, end_date=None, threshold=10):
     """
     max_price = 0
     if end_date is not None:
-        mask = (data['date'] <= end_date)
+        mask = (data['日期'] <= end_date)
         data = data.loc[mask]
     if data is None:
         return False
@@ -27,10 +27,10 @@ def check_enter(code_name, data, end_date=None, threshold=10):
     if len(data) < threshold:
         return False
     for index, row in data.iterrows():
-        if row['close'] > max_price:
-            max_price = float(row['close'])
+        if row['收盘'] > max_price:
+            max_price = float(row['收盘'])
 
-    last_close = data.iloc[-1]['close']
+    last_close = data.iloc[-1]['收盘']
 
     if last_close >= max_price:
         return True
@@ -44,17 +44,17 @@ def check_exit(code_name, data, end_date=None, threshold=10):
         return True
     min_price = 9999
     if end_date is not None:
-        mask = (data['date'] <= end_date)
+        mask = (data['日期'] <= end_date)
         data = data.loc[mask]
     data = data.tail(n=threshold)
     if len(data) < threshold:
         logging.debug("{0}:样本小于{1}天...\n".format(code_name, threshold))
         return False
     for index, row in data.iterrows():
-        if row['close'] < min_price:
-            min_price = float(row['close'])
+        if row['收盘'] < min_price:
+            min_price = float(row['收盘'])
 
-    last_close = data.iloc[-1]['close']
+    last_close = data.iloc[-1]['收盘']
 
     if last_close <= min_price:
         return True
@@ -66,7 +66,7 @@ def check_exit(code_name, data, end_date=None, threshold=10):
 def check_stop(code_name, data, position_data, end_date=None):
     if data is None:
         return True
-    last_close = data.iloc[-1]['close']
+    last_close = data.iloc[-1]['收盘']
     positions = position_data['positions']
     cost = position_data['cost']
     current_cap = 0
@@ -84,23 +84,23 @@ def real_atr(n, amount):
 
 
 def calculate(code_name, data, end_date=None, threshold=20):
-    begin_date = data.iloc[0].date
+    begin_date = data.iloc[0]['日期']
     if end_date is not None:
         if end_date < begin_date:  # 该股票在end_date时还未上市
             logging.debug("{}在{}时还未上市".format(code_name, end_date))
             return False
 
     if end_date is not None:
-        mask = (data['date'] <= end_date)
+        mask = (data['日期'] <= end_date)
         data = data.loc[mask]
 
     if len(data) < threshold:
         logging.debug("{0}:样本小于{1}天...\n".format(code_name, threshold))
         return False
 
-    atr_list = tl.ATR(data['high'], data['low'], data['close'], timeperiod=threshold)
+    atr_list = tl.ATR(data['high'], data['low'], data['收盘'], timeperiod=threshold)
     atr = atr_list.iloc[-1]
-    last_close = data.iloc[-1]['close']
+    last_close = data.iloc[-1]['收盘']
     # 头寸规模
     position_size = math.floor(BALANCE / 100 / real_atr(atr, 100))
     t_shelve = db.ShelvePersistence()
