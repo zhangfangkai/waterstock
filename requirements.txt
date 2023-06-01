@@ -1,4 +1,4 @@
-tushare==1.2.60
+akshare==1.9.26
 PyYAML==5.4
 requests==2.24.0
 pandas==1.1.0

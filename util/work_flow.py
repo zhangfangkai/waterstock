@@ -1,21 +1,19 @@
 # -*- encoding: UTF-8 -*-
-from strategy.backtest import process_backtest
-from util import data_fetcher, db, push, utils
+import datetime
+import logging
+import urllib
+
+import akshare as ak
+import pandas as pd
+
 import settings
 import strategy.enter as enter
-from strategy import turtle_trade
 from strategy import backtrace_ma250
 from strategy import breakthrough_platform
-from strategy import parking_apron
-from strategy import low_backtrace_increase
 from strategy import keep_increasing
-import tushare as ts
-import akshare as ak
-import logging
-import time
-import datetime
-import urllib
-import pandas as pd
+from strategy import turtle_trade
+from strategy.backtest import process_backtest
+from util import data_fetcher, db, push, utils
 
 
 def process():

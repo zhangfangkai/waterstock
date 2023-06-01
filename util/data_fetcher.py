@@ -1,9 +1,7 @@
 # -*- encoding: UTF-8 -*-
 
-import tushare as ts
 import logging
 import settings
-import talib as tl
 import akshare as ak
 
 import concurrent.futures
