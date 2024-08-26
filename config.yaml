@@ -1,4 +1,4 @@
-cron: true
+cron: false
 
 is_backtest: false
 data_dir: "data"

@@ -16,6 +16,7 @@ from strategy.backtest import process_backtest
 from util import data_fetcher, db, push, utils
 
 
+
 def process():
     logging.info("************************ process start ***************************************")
     try:

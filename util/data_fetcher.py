@@ -1,6 +1,9 @@
 # -*- encoding: UTF-8 -*-
 
 import logging
+
+import numpy as np
+
 import settings
 import akshare as ak
 
@@ -43,8 +46,8 @@ def fetch(code_name):
 
     # ts.set_token(settings.config['token'])
     # pro = ts.pro_api()
-    if code_name[1] == "香山股份":
-        print(111)
+    # if code_name[1] == "香山股份":
+    #     print(111)
     # data = ts.get_k_data(stock, autype='qfq')
 
     if data is None or data.empty:
@@ -55,7 +58,18 @@ def fetch(code_name):
 def run(stocks):
     append_mode = False
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=15) as executor:
+    # single test
+    # for stock in stocks:
+    #     data = fetch(stock)
+    #     file_name = stock[0] + '.h5'
+    #     if data is not None:
+    #         data['日期'] = data['日期'].astype(str)
+    #         data['股票代码'] = data['股票代码'].astype(str)
+    #         data['成交量'] = data['股票代码'].astype(float)
+
+    #         data.to_hdf(settings.config['data_dir'] + "/" + file_name, 'data', append=append_mode, format='table', encoding ='UTF-8')
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
         future_to_stock = {executor.submit(fetch, stock): stock for stock in stocks}
         for future in concurrent.futures.as_completed(future_to_stock):
             stock = future_to_stock[future]
@@ -64,7 +78,11 @@ def run(stocks):
                 file_name = stock[0] + '.h5'
 
                 if data is not None:
-                    data = data.astype({'成交量': 'double'})
+                    data['日期'] = data['日期'].astype(str)
+                    data['股票代码'] = data['股票代码'].astype(str)
+                    data['成交量'] = data['股票代码'].astype(float)
+
+                    date = data[['日期','股票代码','收盘']]
                     data.to_hdf(settings.config['data_dir'] + "/" + file_name, 'data', append=append_mode, format='table', encoding ='UTF-8')
             except Exception as exc:
                 print(exc)

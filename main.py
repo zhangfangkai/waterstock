@@ -2,6 +2,11 @@
 
 import logging
 logging.basicConfig(level=logging.DEBUG, format=' [%(asctime)s]-[%(filename)s]-[%(lineno)d]-[%(message)s]', filename='log/waterstock.log')
+
+
+logging.getLogger("urllib3").setLevel(logging.WARNING)
+logging.getLogger("requests").setLevel(logging.WARNING)
+
 logging.info("init-zfk")
 from util import utils, work_flow
 from util.result_join import join_result
@@ -32,7 +37,7 @@ def main():
     else:
         work_flow.process()
         # work_flow.predict()
-        # join_result()
+        join_result()
 
 
 if __name__ == '__main__':

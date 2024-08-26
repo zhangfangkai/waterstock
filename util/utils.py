@@ -55,6 +55,7 @@ def read_data(code_name):
 
 # 是否需要更新数据
 def need_update_data():
+    # return True
     try:
         code_name = ('000001', '平安银行')
         data = read_data(code_name)
@@ -91,3 +92,7 @@ def prepare():
             return
         else:
             os.makedirs(dir)
+
+
+if __name__ == '__main__':
+    date = datetime.datetime.now()

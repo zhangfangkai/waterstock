@@ -13,7 +13,7 @@ from email.header import Header
 def sendmail(content):
     mail_host = "smtp.163.com"
     mail_user = "fangkai_zhang@163.com"
-    mail_pass = "CJORHBYLPSOZGTED"
+    mail_pass = "LDEJFNAEOJOUDHUN"
     receivers = "fangkai_zhang@163.com"
     message = MIMEText("hello，fangkai, today result as following\n"+content, 'plain', 'utf-8')
     subject = u'stock'
